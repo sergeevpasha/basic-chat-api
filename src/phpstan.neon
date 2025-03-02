@@ -1,0 +1,21 @@
+parameters:
+    paths:
+        - app
+        - config
+        - routes
+    
+    # Level 0 is the most basic level
+    level: 0
+    
+    ignoreErrors:
+        -
+            message: '#Undefined variable: \$this#'
+            path: routes/console.php
+    
+    excludePaths:
+        - vendor/*
+        - storage/*
+        - bootstrap/cache/*
+    
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false 

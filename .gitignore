@@ -1,0 +1,7 @@
+/.idea
+/.fleet
+/.nova
+/.vscode
+/.zed
+.env
+.DS_Store

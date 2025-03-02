@@ -1,0 +1,51 @@
+services:
+  nginx:
+    container_name: basic-chat-nginx
+    image: nginx:1.27-alpine
+    ports:
+      - "${DOCKER_NGINX_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d:ro
+      - ./src:/var/www:ro
+      - ./docker/nginx/logs:/var/log/nginx
+    networks:
+      - default-network
+  php:
+    container_name: basic-chat-php
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    tty: true
+    volumes:
+      - ./src:/var/www:consistent
+      - /var/www/vendor
+      - ./docker/php/supervisor:/etc/supervisor/conf.d
+    networks:
+      - default-network
+  postgres:
+    container_name: basic-chat-postgres
+    image: postgres:17
+    environment:
+      POSTGRES_DB: basic_chat
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DOCKER_PGSQL_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - default-network
+networks:
+  default-network:
+    name: basic-chat-network
+    driver: bridge
+volumes:
+  postgres_data:
+    name: basic-chat-postgres-data
+
+
