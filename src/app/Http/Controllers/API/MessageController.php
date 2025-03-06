@@ -8,13 +8,30 @@ use App\Http\Controllers\Controller;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use App\Events\NewMessageEvent;
+use App\Http\Requests\CreateMessageRequest;
+use App\Services\MessageService;
+use Illuminate\Support\Facades\Broadcast;
 
 #[OA\Tag(name: 'Messages', description: 'Message management endpoints')]
 class MessageController extends Controller
 {
+    /**
+     * @var MessageService
+     */
+    protected MessageService $messageService;
+
+    /**
+     * MessageController constructor.
+     *
+     * @param MessageService $messageService
+     */
+    public function __construct(MessageService $messageService)
+    {
+        $this->messageService = $messageService;
+    }
+
     /**
      * Get all messages with their associated users.
      *
@@ -81,7 +98,7 @@ class MessageController extends Controller
     )]
     public function index(): JsonResponse
     {
-        $messages = Message::with('user')->orderBy('created_at')->get();
+        $messages = $this->messageService->getAllMessages();
 
         return response()->json([
             'messages' => $messages,
@@ -91,7 +108,7 @@ class MessageController extends Controller
     /**
      * Create a new message.
      *
-     * @param Request $request The HTTP request containing login and content
+     * @param CreateMessageRequest $request The HTTP request containing login and content
      * @return JsonResponse Response with the created message
      */
     #[OA\Post(
@@ -103,10 +120,10 @@ class MessageController extends Controller
     #[OA\RequestBody(
         required: true,
         content: new OA\JsonContent(
-            required: ['login', 'content'],
+            required: ['login', 'message'],
             properties: [
                 new OA\Property(property: 'login', type: 'string'),
-                new OA\Property(property: 'content', type: 'string'),
+                new OA\Property(property: 'message', type: 'string'),
             ]
         )
     )]
@@ -161,22 +178,12 @@ class MessageController extends Controller
             ]
         )
     )]
-    public function store(Request $request): JsonResponse
+    public function store(CreateMessageRequest $request): JsonResponse
     {
-        $request->validate([
-            'login' => 'required|string|exists:users,login',
-            'content' => 'required|string',
-        ]);
-
-        $user = User::where('login', $request->login)->firstOrFail();
-
-        $message = $user->messages()->create([
-            'content' => $request->getContent(),
-        ]);
-
-        $message->load('user');
-
-        broadcast(new NewMessageEvent($message));
+        $message = $this->messageService->createMessage(
+            $request->login,
+            $request->message
+        );
 
         return response()->json([
             'message' => $message,

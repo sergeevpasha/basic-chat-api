@@ -22,4 +22,4 @@ Route::post('/users', [UserController::class, 'createOrRetrieve']);
 
 // Message routes
 Route::get('/messages', [MessageController::class, 'index']);
-Route::post('/messages', [MessageController::class, 'store']); 
+Route::post('/messages', [MessageController::class, 'store']);

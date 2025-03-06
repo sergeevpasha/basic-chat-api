@@ -9,10 +9,27 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
+use App\Http\Requests\CreateUserRequest;
+use App\Services\UserService;
 
 #[OA\Tag(name: 'Users', description: 'User management endpoints')]
 class UserController extends Controller
 {
+    /**
+     * @var UserService
+     */
+    protected UserService $userService;
+
+    /**
+     * UserController constructor.
+     *
+     * @param UserService $userService
+     */
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
+
     /**
      * Create or retrieve a user by login.
      *
@@ -60,17 +77,11 @@ class UserController extends Controller
             ]
         )
     )]
-    public function createOrRetrieve(Request $request): JsonResponse
+    public function createOrRetrieve(CreateUserRequest $request): JsonResponse
     {
-        $request->validate([
-            'login' => 'required|string|max:255',
-        ]);
-
-        $user = User::firstOrCreate(
-            ['login' => $request->login],
-        );
-
-        $isNewUser = $user->wasRecentlyCreated;
+        $result = $this->userService->createOrRetrieveUser($request->login);
+        $user = $result['user'];
+        $isNewUser = $result['isNewUser'];
 
         return response()->json([
             'user' => $user,
